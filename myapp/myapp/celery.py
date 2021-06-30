@@ -20,5 +20,5 @@ app.conf.beat_schedule = {
     'add-information-about-weather': {
         'task': 'myapi.tasks.add_information_about_weather',
         'schedule': 3600,
-    }
+    },
 }

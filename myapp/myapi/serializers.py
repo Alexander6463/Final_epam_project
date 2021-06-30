@@ -23,6 +23,16 @@ class WeatherCitiesSerializer(serializers.ModelSerializer):
         fields = ['city', 'date', 'weather']
 
 
+class DateTimeSerializer(serializers.Serializer):
+    date_first = serializers.DateTimeField()
+    date_last = serializers.DateTimeField()
+
+
+class CityWeatherSerializer(serializers.Serializer):
+    city = serializers.CharField()
+    units = serializers.ChoiceField(choices=['metric', 'imperial'])
+
+
 class TopCitiesSerializer(serializers.ModelSerializer):
     class Meta:
         model = TopCities
