@@ -24,7 +24,7 @@ MY_API_KEY = os.environ.get('MY_API_KEY')
 SECRET_KEY = os.environ.get('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 
-ALLOWED_HOSTS = [os.environ.get('ALLOWED_HOSTS'), '127.0.0.1']
+ALLOWED_HOSTS = [os.environ.get('ALLOWED_HOSTS')]
 
 # Celery Configuration Options
 CELERY_TIMEZONE = "Europe/Moscow"
