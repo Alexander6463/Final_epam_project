@@ -8,8 +8,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from .models import WeatherCity
-from .services import MyRequest, Validation, WorkWithDatabase
-from .serializers import WeatherCitiesSerializer, UserSerializer
+from .services import MyRequest, export_to_csv_from_database
+from .serializers import WeatherCitiesSerializer, \
+    UserSerializer, DateTimeSerializer, CityWeatherSerializer
 
 
 CACHE_TTL = getattr(settings, 'CACHE_TTL', DEFAULT_TIMEOUT)
@@ -24,14 +25,19 @@ class WeatherView(APIView):
     @method_decorator(cache_page(CACHE_TTL))
     def get(self, request, *args, **kwargs):
         """Give information about weather in the city.
-        Use units=metric for Celsius and units=imperial for Fahrenheit"""
-        city = self.kwargs.get('city_name')
-        units = self.kwargs.get('units_name')
-        weather = MyRequest().get_weather_city(city, units)
-        if weather:
-            return Response({"weather": weather}, status=status.HTTP_200_OK)
-        else:
-            return Response('Bad request', status=status.HTTP_400_BAD_REQUEST)
+        Use units=metric for Celsius and units=imperial for Fahrenheit
+        example request: weather?city=Moscow&units=metric"""
+        if 'city' in request.GET and 'units' in request.GET:
+            serializer = CityWeatherSerializer(
+                data={'city': request.GET['city'],
+                      'units': request.GET['units']})
+            if serializer.is_valid():
+                weather = MyRequest().get_weather_city(
+                    serializer.data['city'],
+                    serializer.data['units'])
+                if weather:
+                    return Response(weather, status=status.HTTP_200_OK)
+        return Response('BadRequest', status=status.HTTP_400_BAD_REQUEST)
 
 
 class WeatherViewCities(APIView):
@@ -44,19 +50,20 @@ class WeatherViewCities(APIView):
     def get(self, request, *args, **kwargs):
         """Give information about 100 top cities weather
         between date_first and date_last in json format.
-        Use date_first and date_last in format 'YYYY-MM-DD H:M:'"""
-        date_begin = self.kwargs.get('date_first')
-        date_end = self.kwargs.get('date_last')
-        if Validation().validate_date(date_begin) \
-                and Validation().validate_date(date_end):
-            weathers = WeatherCity.objects.\
-                filter(date__gte=date_begin, date__lte=date_end)
-            serializer = WeatherCitiesSerializer(weathers, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        else:
-            serializer = 'ValidationError, Use date_first ' \
-                         'and date_last in format YYYY-MM-DD H:M'
-            return Response(serializer, status=status.HTTP_400_BAD_REQUEST)
+        Use date_first and date_last in format 'YYYY-MM-DD'
+        example request:
+        export_to_json?date_first=2021-06-15&date_last=2021-06-29"""
+        if 'date_first' in request.GET and 'date_last' in request.GET:
+            serializer = DateTimeSerializer(
+                data={'date_first': request.GET['date_first'],
+                      'date_last': request.GET['date_last']})
+            if serializer.is_valid():
+                weathers = WeatherCity.objects.filter(
+                    date__gte=serializer.data['date_first'],
+                    date__lte=serializer.data['date_last'])
+                serializer = WeatherCitiesSerializer(weathers, many=True)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response('BadRequest', status=status.HTTP_400_BAD_REQUEST)
 
 
 class WeatherViewCitiesCSV(APIView):
@@ -69,18 +76,18 @@ class WeatherViewCitiesCSV(APIView):
     def get(self, request, *args, **kwargs):
         """"Give information about 100 top cities weather
         between date_first and date_last in csv file format.
-        Use date_first and date_last in format 'YYYY-MM-DD H:M:'"""
-        date_begin = self.kwargs.get('date_first')
-        date_end = self.kwargs.get('date_last')
-        valid = Validation()
-        db = WorkWithDatabase()
-        if valid.validate_date(date_begin) \
-                and valid.validate_date(date_end):
-            return db.export_to_csv_from_database(date_begin, date_end)
-        else:
-            serializer = 'ValidationError, Use date_first ' \
-                         'and date_last in format YYYY-MM-DD H:M'
-            return Response(serializer, status=status.HTTP_400_BAD_REQUEST)
+        Use date_first and date_last in format 'YYYY-MM-DD
+        example request:
+        export_to_csv?date_first=2021-06-15&date_last=2021-06-29'"""
+        if 'date_first' in request.GET and 'date_last' in request.GET:
+            serializer = DateTimeSerializer(
+                data={'date_first': request.GET['date_first'],
+                      'date_last': request.GET['date_last']})
+            if serializer.is_valid():
+                return export_to_csv_from_database(
+                    serializer.data['date_first'],
+                    serializer.data['date_last'])
+        return Response('BadRequest', status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserRegistration(APIView):

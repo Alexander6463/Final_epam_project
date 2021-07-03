@@ -13,10 +13,7 @@ urlpatterns = [
     path('docs/', include_docs_urls(title='Weather API', description=descr)),
     path('schema/', schema_view),
     path('user/', UserRegistration.as_view()),
-    path('city=<str:city_name>&units=<str:units_name>/',
-         WeatherView.as_view()),
-    path('export_to_json_date_begin=<str:date_first>&'
-         'date_end=<str:date_last>/', WeatherViewCities.as_view()),
-    path('export_to_csv_date_begin=<str:date_first>&'
-         'date_end=<str:date_last>/', WeatherViewCitiesCSV.as_view()),
+    path('weather', WeatherView.as_view()),
+    path('export_to_json', WeatherViewCities.as_view()),
+    path('export_to_csv', WeatherViewCitiesCSV.as_view()),
 ]
